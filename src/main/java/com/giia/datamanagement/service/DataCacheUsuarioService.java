@@ -19,20 +19,17 @@ public class DataCacheUsuarioService {
     private final ReactiveRedisTemplate<String, String> redisTemplate;
 
     private final String keyPrefixUsu;
-    private final String keyPrefixProv;
     private final SseService sseService;
     private final ObjectMapper objectMapper;
 
     public DataCacheUsuarioService(ProveedorRepository proveedorRepository,UsuarioProveedorRepository usuarioProveedorRepository,
                                    ReactiveRedisTemplate<String, String> redisTemplate,
                                    @Value("${datacache.redis.key-prefix.usuario-proveedor}") String keyPrefixUsu,
-                                   @Value("${datacache.redis.key-prefix.proveedor-login}") String keyPrefixProv,
                                    SseService sseService, ObjectMapper objectMapper) {
         this.proveedorRepository = proveedorRepository;
         this.redisTemplate = redisTemplate;
         this.keyPrefixUsu = keyPrefixUsu;
         this.sseService = sseService;
-        this.keyPrefixProv=keyPrefixProv;
         this.usuarioProveedorRepository =usuarioProveedorRepository;
         this.objectMapper=objectMapper;
 
@@ -40,38 +37,14 @@ public class DataCacheUsuarioService {
 
     @PostConstruct
     public void init() {
+        redisTemplate.delete("*");
         refreshAll();
-        refreshAllAdmins();
     }
 
     /**
      * Refresca toda la tabla desde SQL Server y la reescribe en Redis
      */
     public void refreshAll() {
-        redisTemplate.keys(keyPrefixProv + "*")      // 1. Buscar todas las keys de proveedores-login
-                .flatMap(redisTemplate::delete)      // 2. Borrarlas
-                .thenMany(                           // 3. Insertar desde la BD
-                        proveedorRepository.findAll()
-                                .flatMap(proveedor -> {
-                                    String redisKey = keyPrefixProv + proveedor.getUsuarioProv();
-                                    try {
-                                        String json = objectMapper.writeValueAsString(proveedor);
-                                        return redisTemplate.opsForValue().set(redisKey, json);
-                                    } catch (JsonProcessingException e) {
-                                        return reactor.core.publisher.Mono.error(
-                                                new RuntimeException("Error deserializando Proveedor", e)
-                                        );
-                                    }
-                                })
-                )
-                .then()
-                .doOnSuccess(v -> {
-                    sseService.publish("REFRESH_LOGIN_PROVEDORES");
-                    log.debug("Cache de login de proveedores refrescada");
-                })
-                .subscribe();
-    }
-    public void refreshAllAdmins() {
         redisTemplate.keys(keyPrefixUsu + "*")       // 1. Buscar todas las keys de usuario-proveedor
                 .flatMap(redisTemplate::delete)      // 2. Borrarlas
                 .thenMany(                           // 3. Insertar desde la BD
@@ -90,7 +63,7 @@ public class DataCacheUsuarioService {
                 )
                 .then()
                 .doOnSuccess(v -> {
-                    sseService.publish("REFRESH_LOGIN_ADMINS");
+                    sseService.publish("REFRESH_LOGIN");
                     log.debug("Cache de login de administradores refrescada");
                 })
                 .subscribe();

@@ -1,5 +1,6 @@
 package com.giia.datamanagement.model;
 
+import jakarta.persistence.Entity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +15,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
 @Table(name = "Usuario")
 public class Usuario {
 
