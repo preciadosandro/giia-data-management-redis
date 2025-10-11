@@ -108,6 +108,7 @@ public class DataCacheUsuarioService {
                 )
                 .then()
                 .doOnSuccess(v -> {
+                    refreshAll();
                     sseService.publish("REFRESH_USUARIOS");
                     log.debug("Cache de usuarios refrescada desde SQL Server");
                 });
