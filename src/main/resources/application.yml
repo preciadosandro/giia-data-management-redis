@@ -31,10 +31,12 @@ datacache:
     key-prefix:
       proveedor: "proveedor:"
       usuario-proveedor: "usuario-proveedor:"
+      remision: "remision:"
+      remision-material: "rem-mat:"
     channel:
       proveedor: "proveedor-updates"
       usuario-proveedor: "usu-proveedor-updates"
-
+      remision: "remision-updates"
 # ==============================
 # Logging
 # ==============================

@@ -59,7 +59,6 @@ public class DataCacheUsuarioService {
     @PostConstruct
     public void init() {
         redisTemplate.delete("*");
-        refreshAll();
         refreshAllUsu().subscribe();
     }
 
