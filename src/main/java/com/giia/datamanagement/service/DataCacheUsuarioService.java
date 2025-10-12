@@ -62,33 +62,6 @@ public class DataCacheUsuarioService {
         refreshAllUsu().subscribe();
     }
 
-    /**
-     * Refresca toda la tabla desde SQL Server y la reescribe en Redis
-     */
-    public void refreshAll() {
-        redisTemplate.keys(keyPrefixUsu + "*")       // 1. Buscar todas las keys de usuario-proveedor
-                .flatMap(redisTemplate::delete)      // 2. Borrarlas
-                .thenMany(                           // 3. Insertar desde la BD
-                        usuarioProveedorRepository.findAll()
-                                .flatMap(usuario -> {
-                                    String redisKey = keyPrefixUsu + usuario.getUsuario();
-                                    try {
-                                        String json = objectMapper.writeValueAsString(usuario);
-                                        return redisTemplate.opsForValue().set(redisKey, json);
-                                    } catch (JsonProcessingException e) {
-                                        return reactor.core.publisher.Mono.error(
-                                                new RuntimeException("Error deserializando Usuario", e)
-                                        );
-                                    }
-                                })
-                )
-                .then()
-                .doOnSuccess(v -> {
-                    sseService.publish("REFRESH_LOGIN");
-                    log.debug("Cache de login de administradores refrescada");
-                })
-                .subscribe();
-    }
 
     public Mono<Void> refreshAllUsu() {
         return redisTemplate.keys(keyPrefixUsu + "*") // 1. Trae todas las keys de proveedores
@@ -107,7 +80,6 @@ public class DataCacheUsuarioService {
                 )
                 .then()
                 .doOnSuccess(v -> {
-                    refreshAll();
                     sseService.publish("REFRESH_USUARIOS");
                     log.debug("Cache de usuarios refrescada desde SQL Server");
                 });

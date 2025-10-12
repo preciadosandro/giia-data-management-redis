@@ -46,7 +46,7 @@ public class DataCacheProvedoresService {
                 .cast(String.class)
                 .flatMap(event ->{
                             log.debug("Evento leido provedor service: {}",event);
-                            usuarioService.refreshAll();
+                            usuarioService.refreshAllUsu();
                             return refreshAll();
                         }
                 )
