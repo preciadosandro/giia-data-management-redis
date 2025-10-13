@@ -32,6 +32,11 @@ public class Remision {
     @Column("Observaciones")
     private String observaciones;
 
+    @Column("tipo")
+    private String tipo;
+
+    @Column("id_usuario")
+    private Long idUsuario;
 
 
 
