@@ -83,6 +83,7 @@ public class DataCacheProvedoresService {
                 .then()
                 .doOnSuccess(v -> {
                     sseService.publish("REFRESH_PROVEEDORES");
+                    usuarioService.refreshAllUsu();
                     log.debug("Cache de proveedores refrescada desde SQL Server");
                 });
     }
