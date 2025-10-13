@@ -2,48 +2,48 @@ package com.giia.datamanagement.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.giia.datamanagement.repository.ProveedorRepository;
+import com.giia.datamanagement.repository.InventarioRepository;
+import com.giia.datamanagement.repository.MaterialRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
+import org.springframework.data.redis.connection.ReactiveSubscription;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.ReactiveRedisMessageListenerContainer;
-import org.springframework.data.redis.connection.ReactiveSubscription.Message;
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
-public class DataCacheProvedoresService {
+public class DataCacheInventariosService {
 
-    private final ProveedorRepository proveedorRepository;
+    private final InventarioRepository inventarioRepository;
     private final ReactiveRedisTemplate<String, String> redisTemplate;
     private final String keyPrefix;
     private final SseService sseService;
     private final ObjectMapper objectMapper;
-    private final DataCacheUsuarioService usuarioService;
 
-    public DataCacheProvedoresService(ProveedorRepository proveedorRepository,
-                                      ReactiveRedisTemplate<String, String> redisTemplate,
-                                      ReactiveRedisConnectionFactory connectionFactory,
-                                      @Value("${datacache.redis.key-prefix.proveedor}") String keyPrefix,
-                                      @Value("${datacache.redis.channel.proveedor}") String channel,
-                                      SseService sseService, DataCacheUsuarioService usuarioService, ObjectMapper objectMapper) {
-        this.proveedorRepository = proveedorRepository;
+
+    public DataCacheInventariosService( InventarioRepository inventarioRepository,
+                                    ReactiveRedisTemplate<String, String> redisTemplate,
+                                    ReactiveRedisConnectionFactory connectionFactory,
+                                    @Value("${datacache.redis.key-prefix.inventario}") String keyPrefix,
+                                    @Value("${datacache.redis.channel.inventario}") String channel,
+                                    SseService sseService, ObjectMapper objectMapper) {
+        this.inventarioRepository = inventarioRepository;
         this.redisTemplate = redisTemplate;
         ReactiveRedisMessageListenerContainer listenerContainer = new ReactiveRedisMessageListenerContainer(connectionFactory);
         ChannelTopic channelTopic = new ChannelTopic(channel);
         this.keyPrefix = keyPrefix;
         this.sseService = sseService;
-        this.usuarioService=usuarioService;
         this.objectMapper=objectMapper;
 
+
         listenerContainer.receive(channelTopic)
-                .map(Message::getMessage)
+                .map(ReactiveSubscription.Message::getMessage)
                 .cast(String.class)
                 .flatMap(event ->{
                             log.debug("Evento leido provedor service: {}",event);
@@ -69,22 +69,21 @@ public class DataCacheProvedoresService {
         return redisTemplate.keys(keyPrefix + "*") // 1. Trae todas las keys de proveedores
                 .flatMap(redisTemplate::delete)     // 2. Borra cada key
                 .thenMany(                          // 3. Una vez borrado, vuelve a insertar
-                        proveedorRepository.findAll()
-                                .flatMap(proveedor -> {
-                                    String redisKey = keyPrefix + proveedor.getId();
+                        inventarioRepository.findAll()
+                                .flatMap(inventario -> {
+                                    String redisKey = keyPrefix + inventario.getId();
                                     try {
-                                        String json = objectMapper.writeValueAsString(proveedor);
+                                        String json = objectMapper.writeValueAsString(inventario);
                                         return redisTemplate.opsForValue().set(redisKey, json);
                                     } catch (JsonProcessingException e) {
-                                        return Mono.error(new RuntimeException("Error serializando proveedor", e));
+                                        return Mono.error(new RuntimeException("Error serializando inventario", e));
                                     }
                                 })
                 )
                 .then()
                 .doOnSuccess(v -> {
-                    sseService.publish("REFRESH_PROVEEDORES");
-                    usuarioService.refreshAllUsu().subscribe();
-                    log.debug("Cache de proveedores refrescada desde SQL Server");
+                    sseService.publish("REFRESH_INVENTARIO");
+                    log.debug("Cache de inventario refrescada desde SQL Server");
                 });
     }
     /**
@@ -94,6 +93,4 @@ public class DataCacheProvedoresService {
     public void scheduledRefresh() {
         refreshAll().subscribe();
     }
-
-
 }

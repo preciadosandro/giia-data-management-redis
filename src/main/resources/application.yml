@@ -33,10 +33,14 @@ datacache:
       usuario-proveedor: "usuario-proveedor:"
       remision: "remision:"
       remision-material: "rem-mat:"
+      material: "material:"
+      inventario: "inventario:"
     channel:
       proveedor: "proveedor-updates"
       usuario-proveedor: "usu-proveedor-updates"
       remision: "remision-updates"
+      material: "material-updates"
+      inventario: "inventario-updates"
 # ==============================
 # Logging
 # ==============================

@@ -104,7 +104,7 @@ public class DataCacheRemisionesService {
                                         String json = objectMapper.writeValueAsString(remisionMaterial);
                                         return redisTemplate.opsForValue().set(redisKey, json);
                                     } catch (JsonProcessingException e) {
-                                        return Mono.error(new RuntimeException("Error serializando proveedor", e));
+                                        return Mono.error(new RuntimeException("Error serializando remisiones materiales", e));
                                     }
                                 })
                 )
